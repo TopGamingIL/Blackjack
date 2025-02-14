@@ -69,11 +69,15 @@ namespace Blackjack
             Bet = 0;
         }
 
-        public int Option(Deck deck)
+        public int Option(Deck deck, Game game)
         {
             // Prompt player to hit, stand, or double down
             Console.Write("[1] Hit | [2] Stand");
-            if (Hand.Count == 2) Console.Write(" | [3] Double Down");
+            if (Hand.Count == 2 && Bet < Balance)
+            {
+                Console.Write(" | [3] Double Down");
+                if (Hand[0].Rank == Hand[1].Rank) Console.Write(" | [4] Split");
+            }
             Console.Write("\nPick an option to make: ");
 
             // Check if input is a valid integer
@@ -89,19 +93,44 @@ namespace Blackjack
                     Stand();
                     return 2;
                 case 3:
-                    if (Hand.Count == 2) DoubleDown(deck);
-                    else Console.WriteLine("You can only double down on first turn."); Option(deck);
-                    return 3;
+                    if (Hand.Count == 2 && Bet < Balance) { DoubleDown(deck); return 2; }
+                    else Console.WriteLine("You can only double down on first turn."); Option(deck, game);
+                    break;
+                case 4:
+                    if (Hand.Count == 2 && Hand[0].Rank == Hand[1].Rank && Bet < Balance) { Split(deck, game); return 4; }
+                    else Console.WriteLine("You can only split on first turn with a pair."); Option(deck, game);
+                    break;
                 default:
                     Console.WriteLine("Please enter a valid input.");
-                    Option(deck);
+                    Option(deck, game);
                     break;
             }
             return 0;
         }
 
+        public void Split(Deck deck, Game game)
+        {
+            Player secondPlayer = new Player();
+            Game secondGame = new Game();
+            secondPlayer.Hand.Add(Hand[1]);
+            Hand.RemoveAt(1);
+            secondPlayer.Bet = Bet;
+            Balance -= Bet;
+            secondPlayer.Balance = Balance;
+            secondPlayer.Hand.Add(deck.Cards.First());
+            deck.Cards.RemoveAt(0);
+            Hand.Add(deck.Cards.First());
+            deck.Cards.RemoveAt(0);
+            secondPlayer.AceCheck();
+            AceCheck();
+            secondGame.Player = secondPlayer;
+            secondGame.Dealer = game.Dealer;
+            secondGame.Play(Bet);
+        }
+
         private void DoubleDown(Deck deck)
-        { 
+        {
+            Console.WriteLine($"Balance: {Balance} - {Bet} = {Balance - Bet}");
             Balance -= Bet;
             Bet *= 2;
             Deal(deck);
