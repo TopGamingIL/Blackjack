@@ -32,7 +32,18 @@ namespace Blackjack
             Id = id;
             Rank = Ranks[id % 13];
             Suit = Suits[id / 13];
-            Value = ((id % 13) + 1) > 10 ? 10 : (id % 13) + 1;
+            if (Rank == 'A')
+            {
+                Value = 11;
+            }
+            else if (Rank == 'T' || Rank == 'J' || Rank == 'Q' || Rank == 'K')
+            {
+                Value = 10;
+            }
+            else
+            {
+                Value = (id % 13) + 1;
+            }
         }
 
         public void Print()

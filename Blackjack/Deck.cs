@@ -32,6 +32,15 @@ namespace Blackjack
             }
         }
 
+        public void DeckOf(int id)
+        {
+            Cards = new List<Card>();
+            for (int i = 0; i < 52; i++)
+            {
+                Cards.Add(new Card(id));
+            }
+        }
+
         public void Shuffle()
         {
             // Shuffle deck

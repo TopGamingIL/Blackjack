@@ -10,11 +10,15 @@ namespace Blackjack
     {
         // Properties
         // Balance: Player's chips
-        public int Balance { get; set; }
+        public double Balance { get; set; }
         // Bet: Amount of chips player bets
         public int Bet { get; set; }
         // Hand: List of cards player holds
         public List<Card> Hand { get; set; }
+        // Instance: Player's instance number
+        public int Instance { get; set; }
+        // BoughtInsurance: Whether player bought insurance
+        public bool BoughtInsurance { get; set; }
 
         // Constructor
         public Player()
@@ -23,6 +27,8 @@ namespace Blackjack
             Balance = 2500;
             Bet = 0;
             Hand = new List<Card>();
+            Instance = 1;
+            BoughtInsurance = false;
         }
 
         // Methods
@@ -30,13 +36,13 @@ namespace Blackjack
         public void PrintBalance()
         {
             // Print player's balance
-            Console.WriteLine($"Balance: {Balance}");
+            Console.WriteLine($"Balance: ${Balance}");
         }
 
         public void PlaceBet()
         {
             // Prompt player to place a bet
-            Console.WriteLine("Enter your bet:");
+            Console.Write("Enter your bet: ");
             // Check if input is a valid integer
             Bet = Convert.ToInt32(Console.ReadLine());
             if (Bet > Balance)
@@ -90,14 +96,13 @@ namespace Blackjack
                     Deal(deck);
                     return 1;
                 case 2:
-                    Stand();
                     return 2;
                 case 3:
                     if (Hand.Count == 2 && Bet < Balance) { DoubleDown(deck); return 2; }
                     else Console.WriteLine("You can only double down on first turn."); Option(deck, game);
                     break;
                 case 4:
-                    if (Hand.Count == 2 && Hand[0].Rank == Hand[1].Rank && Bet < Balance) { Split(deck, game); return 4; }
+                    if (Hand.Count == 2 && Hand[0].Rank == Hand[1].Rank && Bet < Balance) { game.Players = Split(deck, game); return 4; }
                     else Console.WriteLine("You can only split on first turn with a pair."); Option(deck, game);
                     break;
                 default:
@@ -108,24 +113,42 @@ namespace Blackjack
             return 0;
         }
 
-        public void Split(Deck deck, Game game)
+        public List<Player> Split(Deck deck, Game game)
         {
+            // Split hand
+            // Create new player and game
             Player secondPlayer = new Player();
             Game secondGame = new Game();
-            secondPlayer.Hand.Add(Hand[1]);
-            Hand.RemoveAt(1);
-            secondPlayer.Bet = Bet;
+
+            // Initialize second player with same balance, bet, and instance number
             Balance -= Bet;
             secondPlayer.Balance = Balance;
+            secondPlayer.Bet = Bet;
+            secondPlayer.Instance = Instance + 1;
+
+            // Add second card from first hand to second player's hand
+            secondPlayer.Hand.Add(Hand[1]);
+            Hand.RemoveAt(1);
+
+            // Create new game with same dealer and players
+            secondGame.Player = secondPlayer;
+            secondGame.Dealer = game.Dealer;
+            secondGame.Players = game.Players;
+            secondGame.Players.Add(secondPlayer);
+
+            // Deal new cards to both players
             secondPlayer.Hand.Add(deck.Cards.First());
             deck.Cards.RemoveAt(0);
             Hand.Add(deck.Cards.First());
             deck.Cards.RemoveAt(0);
             secondPlayer.AceCheck();
             AceCheck();
-            secondGame.Player = secondPlayer;
-            secondGame.Dealer = game.Dealer;
-            secondGame.Play(Bet);
+
+            // Play second game
+            secondGame.Play(Instance);
+
+            // Return list of players
+            return secondGame.Players;
         }
 
         private void DoubleDown(Deck deck)
@@ -134,7 +157,6 @@ namespace Blackjack
             Balance -= Bet;
             Bet *= 2;
             Deal(deck);
-            Stand();
         }
 
         public void Deal(Deck deck)
@@ -142,11 +164,6 @@ namespace Blackjack
             Hand.Add(deck.Cards.First());
             deck.Cards.RemoveAt(0);
             AceCheck();
-        }
-
-        public void Stand()
-        {
-            Console.WriteLine("Player stands.");
         }
 
         public void PrintHand()
@@ -174,27 +191,12 @@ namespace Blackjack
         public void AceCheck()
         {
             // Check for aces in hand and adjust value accordingly
-            // If hand has more than 2 cards, aces are valued at 1 except for the last ace
-            if (Hand.Count > 2)
+            // If hand value is more than 21, change value of ace to 11
+            foreach (Card card in Hand)
             {
-                foreach (Card card in Hand)
+                if (card.Rank == 'A' && HandValue() > 21)
                 {
-                    if (card.Rank == 'A')
-                    {
-                        card.Value = 1;
-                    }
-                }
-                if (Hand.Last().Rank == 'A' && HandValue() + 10 <= 21) Hand.Last().Value = 11;
-            }
-            // If hand has 2 cards, aces are valued at 11 if hand value is less than or equal to 21
-            else
-            {
-                foreach (Card card in Hand)
-                {
-                    if (card.Rank == 'A' && HandValue() + 10 <= 21)
-                    {
-                        card.Value = 11;
-                    }
+                    card.Value = 1;
                 }
             }
 
